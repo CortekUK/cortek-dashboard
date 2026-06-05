@@ -7,9 +7,12 @@ import {
   deleteProject as dbDeleteProject,
   insertProject as dbInsertProject,
   listProjects as dbListProjects,
+  updateProjectClientName as dbUpdateProjectClientName,
   updateProjectDates as dbUpdateProjectDates,
   updateProjectDemoCredentials as dbUpdateProjectDemoCredentials,
+  updateProjectDeveloperName as dbUpdateProjectDeveloperName,
   updateProjectLiveUrl as dbUpdateProjectLiveUrl,
+  updateProjectName as dbUpdateProjectName,
   updateProjectStage as dbUpdateProjectStage,
   type Project,
   type ProjectStage,
@@ -27,6 +30,9 @@ type ProjectsContextValue = {
     stage?: ProjectStage
   }) => Promise<void>
   removeProject: (id: string) => Promise<void>
+  setName: (id: string, projectName: string) => Promise<void>
+  setClientName: (id: string, clientName: string) => Promise<void>
+  setDeveloperName: (id: string, developerName: string | null) => Promise<void>
   setStage: (id: string, stage: ProjectStage) => Promise<void>
   setDates: (
     id: string,
@@ -113,6 +119,29 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     []
   )
 
+  const setName = React.useCallback<ProjectsContextValue["setName"]>(
+    async (id, projectName) => {
+      const updated = await dbUpdateProjectName(id, projectName)
+      setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)))
+    },
+    []
+  )
+
+  const setClientName = React.useCallback<ProjectsContextValue["setClientName"]>(
+    async (id, clientName) => {
+      const updated = await dbUpdateProjectClientName(id, clientName)
+      setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)))
+    },
+    []
+  )
+
+  const setDeveloperName = React.useCallback<
+    ProjectsContextValue["setDeveloperName"]
+  >(async (id, developerName) => {
+    const updated = await dbUpdateProjectDeveloperName(id, developerName)
+    setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)))
+  }, [])
+
   const setStage = React.useCallback<ProjectsContextValue["setStage"]>(
     async (id, stage) => {
       const updated = await dbUpdateProjectStage(id, stage)
@@ -173,6 +202,9 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       error,
       addProject,
       removeProject,
+      setName,
+      setClientName,
+      setDeveloperName,
       setStage,
       setDates,
       setLiveUrl,
@@ -187,6 +219,9 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       error,
       addProject,
       removeProject,
+      setName,
+      setClientName,
+      setDeveloperName,
       setStage,
       setDates,
       setLiveUrl,

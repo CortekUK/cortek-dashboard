@@ -6,6 +6,7 @@ export type Project = {
   id: string
   clientName: string
   projectName: string
+  developerName: string | null
   stage: ProjectStage
   startDate: string | null
   endDate: string | null
@@ -20,6 +21,7 @@ type ProjectRow = {
   id: string
   client_name: string
   project_name: string
+  developer_name: string | null
   stage: ProjectStage
   start_date: string | null
   end_date: string | null
@@ -31,13 +33,14 @@ type ProjectRow = {
 }
 
 const COLUMNS =
-  "id, client_name, project_name, stage, start_date, end_date, live_url, demo_username, demo_password, created_at, updated_at"
+  "id, client_name, project_name, developer_name, stage, start_date, end_date, live_url, demo_username, demo_password, created_at, updated_at"
 
 function fromRow(row: ProjectRow): Project {
   return {
     id: row.id,
     clientName: row.client_name,
     projectName: row.project_name,
+    developerName: row.developer_name,
     stage: row.stage,
     startDate: row.start_date,
     endDate: row.end_date,
@@ -97,6 +100,48 @@ export async function updateProjectStage(
   const { data, error } = await supabase
     .from("projects")
     .update({ stage })
+    .eq("id", id)
+    .select(COLUMNS)
+    .single()
+  if (error) throw error
+  return fromRow(data as ProjectRow)
+}
+
+export async function updateProjectName(
+  id: string,
+  projectName: string
+): Promise<Project> {
+  const { data, error } = await supabase
+    .from("projects")
+    .update({ project_name: projectName })
+    .eq("id", id)
+    .select(COLUMNS)
+    .single()
+  if (error) throw error
+  return fromRow(data as ProjectRow)
+}
+
+export async function updateProjectClientName(
+  id: string,
+  clientName: string
+): Promise<Project> {
+  const { data, error } = await supabase
+    .from("projects")
+    .update({ client_name: clientName })
+    .eq("id", id)
+    .select(COLUMNS)
+    .single()
+  if (error) throw error
+  return fromRow(data as ProjectRow)
+}
+
+export async function updateProjectDeveloperName(
+  id: string,
+  developerName: string | null
+): Promise<Project> {
+  const { data, error } = await supabase
+    .from("projects")
+    .update({ developer_name: developerName })
     .eq("id", id)
     .select(COLUMNS)
     .single()

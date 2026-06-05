@@ -28,12 +28,6 @@ import {
   updatePhase,
   type Phase,
 } from "@/lib/phases-db"
-import {
-  deletePhaseGoal,
-  insertPhaseGoal,
-  updatePhaseGoal,
-  type PhaseGoal,
-} from "@/lib/phase-goals-db"
 import type { Project } from "@/lib/projects-context"
 import { phaseToneFor, TASK_STATUS_TONE, TONE_CLASSES } from "@/lib/status-colors"
 import {
@@ -49,11 +43,10 @@ import {
 type Props = {
   project: Project
   phase: Phase | null
-  goals: PhaseGoal[]
   tasks: Task[]
 }
 
-export function PhaseEditor({ project, phase, goals, tasks }: Props) {
+export function PhaseEditor({ project, phase, tasks }: Props) {
   if (phase === null) {
     return <CreatePhaseScreen project={project} />
   }
@@ -61,7 +54,6 @@ export function PhaseEditor({ project, phase, goals, tasks }: Props) {
     <EditPhaseScreen
       project={project}
       initialPhase={phase}
-      initialGoals={goals}
       initialTasks={tasks}
     />
   )
@@ -178,12 +170,10 @@ function CreatePhaseScreen({ project }: { project: Project }) {
 function EditPhaseScreen({
   project,
   initialPhase,
-  initialGoals,
   initialTasks,
 }: {
   project: Project
   initialPhase: Phase
-  initialGoals: PhaseGoal[]
   initialTasks: Task[]
 }) {
   const router = useRouter()
@@ -191,9 +181,7 @@ function EditPhaseScreen({
   const [name, setName] = React.useState(initialPhase.name)
   const [startDate, setStartDate] = React.useState(initialPhase.startDate ?? "")
   const [endDate, setEndDate] = React.useState(initialPhase.endDate ?? "")
-  const [goals, setGoals] = React.useState<PhaseGoal[]>(initialGoals)
   const [tasks, setTasks] = React.useState<Task[]>(initialTasks)
-  const [newGoal, setNewGoal] = React.useState("")
   const [newTask, setNewTask] = React.useState("")
   const [savingField, setSavingField] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
@@ -229,49 +217,6 @@ function EditPhaseScreen({
     router.push(`/projects/${project.id}`)
   }
 
-  // ── Goals ─────────────────────────────────────────────────────────────
-  async function handleAddGoal(e: React.FormEvent) {
-    e.preventDefault()
-    const text = newGoal.trim()
-    if (!text) return
-    const created = await insertPhaseGoal({
-      phaseId: phase.id,
-      text,
-      position: goals.length,
-    })
-    setGoals((prev) => [...prev, created])
-    setNewGoal("")
-  }
-
-  async function handleToggleGoal(goal: PhaseGoal) {
-    const next = !goal.achieved
-    setGoals((prev) =>
-      prev.map((g) => (g.id === goal.id ? { ...g, achieved: next } : g))
-    )
-    try {
-      await updatePhaseGoal(goal.id, { achieved: next })
-    } catch (e) {
-      setGoals((prev) =>
-        prev.map((g) =>
-          g.id === goal.id ? { ...g, achieved: goal.achieved } : g
-        )
-      )
-      setError(e instanceof Error ? e.message : "Failed to update goal")
-    }
-  }
-
-  async function handleGoalText(goal: PhaseGoal, text: string) {
-    const trimmed = text.trim()
-    if (!trimmed || trimmed === goal.text) return
-    const updated = await updatePhaseGoal(goal.id, { text: trimmed })
-    setGoals((prev) => prev.map((g) => (g.id === goal.id ? updated : g)))
-  }
-
-  async function handleDeleteGoal(id: string) {
-    await deletePhaseGoal(id)
-    setGoals((prev) => prev.filter((g) => g.id !== id))
-  }
-
   // ── Tasks ─────────────────────────────────────────────────────────────
   async function handleAddTask(e: React.FormEvent) {
     e.preventDefault()
@@ -299,7 +244,6 @@ function EditPhaseScreen({
   }
 
   const completedTasks = tasks.filter((t) => t.status === "completed").length
-  const achievedGoals = goals.filter((g) => g.achieved).length
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
@@ -373,55 +317,6 @@ function EditPhaseScreen({
 
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         <div className="flex flex-col gap-6">
-          {/* Goals */}
-          <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
-            <header className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Goals</h2>
-              <span className="text-xs text-muted-foreground">
-                {achievedGoals}/{goals.length} achieved
-              </span>
-            </header>
-
-            {goals.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No goals yet. What does success look like for this phase?
-              </p>
-            ) : (
-              <ul className="flex flex-col gap-1.5">
-                {goals.map((goal) => (
-                  <GoalRow
-                    key={goal.id}
-                    goal={goal}
-                    onToggle={() => handleToggleGoal(goal)}
-                    onText={(text) => handleGoalText(goal, text)}
-                    onDelete={() => handleDeleteGoal(goal.id)}
-                  />
-                ))}
-              </ul>
-            )}
-
-            <form
-              onSubmit={handleAddGoal}
-              className="flex items-center gap-2 pt-1"
-            >
-              <Input
-                placeholder="Add a goal…"
-                value={newGoal}
-                onChange={(e) => setNewGoal(e.target.value)}
-                className="h-8 text-sm"
-              />
-              <Button
-                type="submit"
-                size="sm"
-                variant="secondary"
-                disabled={!newGoal.trim()}
-              >
-                <Plus />
-                Goal
-              </Button>
-            </form>
-          </section>
-
           {/* Tasks */}
           <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
             <header className="flex items-center justify-between">
@@ -643,52 +538,3 @@ function DateField({
   )
 }
 
-function GoalRow({
-  goal,
-  onToggle,
-  onText,
-  onDelete,
-}: {
-  goal: PhaseGoal
-  onToggle: () => void
-  onText: (text: string) => void
-  onDelete: () => void
-}) {
-  const [text, setText] = React.useState(goal.text)
-  React.useEffect(() => setText(goal.text), [goal.text])
-
-  return (
-    <li className="group flex items-center gap-3 rounded-md border bg-background px-3 py-2">
-      <input
-        type="checkbox"
-        checked={goal.achieved}
-        onChange={onToggle}
-        className="size-4"
-        aria-label={`Toggle ${goal.text}`}
-      />
-      <Input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={() => {
-          if (text.trim() && text.trim() !== goal.text) {
-            onText(text)
-          } else {
-            setText(goal.text)
-          }
-        }}
-        className={`h-7 border-transparent bg-transparent px-1 text-sm shadow-none focus-visible:border-input ${
-          goal.achieved ? "text-muted-foreground line-through" : ""
-        }`}
-      />
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        aria-label={`Delete goal ${goal.text}`}
-        className="opacity-0 group-hover:opacity-100"
-        onClick={onDelete}
-      >
-        <Trash2 />
-      </Button>
-    </li>
-  )
-}

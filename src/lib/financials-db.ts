@@ -3,15 +3,26 @@ import { supabase } from "@/lib/supabase"
 export type ProjectFinancials = {
   projectId: string
   totalCost: number | null
+
+  // Client side
   advanceAmount: number | null
   advancePercent: number | null
   advanceReceived: boolean
   advanceExpectedOn: string | null
   advanceReceivedOn: string | null
+  finalPaymentReceived: boolean
+  finalPaymentExpectedOn: string | null
+  finalPaymentReceivedOn: string | null
+
+  // Dev side
   devName: string | null
   devCommissionAmount: number | null
   devCommissionPercent: number | null
-  devBonusPercent: number | null
+  devAdvanceAmount: number | null
+  devAdvancePercent: number | null
+  devAdvanceGiven: boolean
+  devAdvanceGivenOn: string | null
+
   notes: string | null
   updatedAt: string
 }
@@ -24,16 +35,41 @@ type FinancialsRow = {
   advance_received: boolean
   advance_expected_on: string | null
   advance_received_on: string | null
+  final_payment_received: boolean
+  final_payment_expected_on: string | null
+  final_payment_received_on: string | null
   dev_name: string | null
   dev_commission_amount: string | number | null
   dev_commission_percent: string | number | null
-  dev_bonus_percent: string | number | null
+  dev_advance_amount: string | number | null
+  dev_advance_percent: string | number | null
+  dev_advance_given: boolean
+  dev_advance_given_on: string | null
   notes: string | null
   updated_at: string
 }
 
-const COLUMNS =
-  "project_id, total_cost, advance_amount, advance_percent, advance_received, advance_expected_on, advance_received_on, dev_name, dev_commission_amount, dev_commission_percent, dev_bonus_percent, notes, updated_at"
+const COLUMNS = [
+  "project_id",
+  "total_cost",
+  "advance_amount",
+  "advance_percent",
+  "advance_received",
+  "advance_expected_on",
+  "advance_received_on",
+  "final_payment_received",
+  "final_payment_expected_on",
+  "final_payment_received_on",
+  "dev_name",
+  "dev_commission_amount",
+  "dev_commission_percent",
+  "dev_advance_amount",
+  "dev_advance_percent",
+  "dev_advance_given",
+  "dev_advance_given_on",
+  "notes",
+  "updated_at",
+].join(", ")
 
 function num(v: string | number | null): number | null {
   if (v === null || v === undefined) return null
@@ -49,10 +85,16 @@ function fromRow(r: FinancialsRow): ProjectFinancials {
     advanceReceived: r.advance_received,
     advanceExpectedOn: r.advance_expected_on,
     advanceReceivedOn: r.advance_received_on,
+    finalPaymentReceived: r.final_payment_received,
+    finalPaymentExpectedOn: r.final_payment_expected_on,
+    finalPaymentReceivedOn: r.final_payment_received_on,
     devName: r.dev_name,
     devCommissionAmount: num(r.dev_commission_amount),
     devCommissionPercent: num(r.dev_commission_percent),
-    devBonusPercent: num(r.dev_bonus_percent),
+    devAdvanceAmount: num(r.dev_advance_amount),
+    devAdvancePercent: num(r.dev_advance_percent),
+    devAdvanceGiven: r.dev_advance_given,
+    devAdvanceGivenOn: r.dev_advance_given_on,
     notes: r.notes,
     updatedAt: r.updated_at,
   }
@@ -67,10 +109,16 @@ function emptyFinancials(projectId: string): ProjectFinancials {
     advanceReceived: false,
     advanceExpectedOn: null,
     advanceReceivedOn: null,
+    finalPaymentReceived: false,
+    finalPaymentExpectedOn: null,
+    finalPaymentReceivedOn: null,
     devName: null,
     devCommissionAmount: null,
     devCommissionPercent: null,
-    devBonusPercent: null,
+    devAdvanceAmount: null,
+    devAdvancePercent: null,
+    devAdvanceGiven: false,
+    devAdvanceGivenOn: null,
     notes: null,
     updatedAt: new Date().toISOString(),
   }
@@ -85,7 +133,7 @@ export async function getProjectFinancials(
     .eq("project_id", projectId)
     .maybeSingle()
   if (error) throw error
-  return data ? fromRow(data as FinancialsRow) : emptyFinancials(projectId)
+  return data ? fromRow(data as unknown as FinancialsRow) : emptyFinancials(projectId)
 }
 
 export type FinancialsPatch = Partial<
@@ -99,10 +147,16 @@ const PATCH_TO_COLUMN: Record<keyof FinancialsPatch, string> = {
   advanceReceived: "advance_received",
   advanceExpectedOn: "advance_expected_on",
   advanceReceivedOn: "advance_received_on",
+  finalPaymentReceived: "final_payment_received",
+  finalPaymentExpectedOn: "final_payment_expected_on",
+  finalPaymentReceivedOn: "final_payment_received_on",
   devName: "dev_name",
   devCommissionAmount: "dev_commission_amount",
   devCommissionPercent: "dev_commission_percent",
-  devBonusPercent: "dev_bonus_percent",
+  devAdvanceAmount: "dev_advance_amount",
+  devAdvancePercent: "dev_advance_percent",
+  devAdvanceGiven: "dev_advance_given",
+  devAdvanceGivenOn: "dev_advance_given_on",
   notes: "notes",
 }
 
@@ -122,5 +176,5 @@ export async function upsertProjectFinancials(
     .select(COLUMNS)
     .single()
   if (error) throw error
-  return fromRow(data as FinancialsRow)
+  return fromRow(data as unknown as FinancialsRow)
 }

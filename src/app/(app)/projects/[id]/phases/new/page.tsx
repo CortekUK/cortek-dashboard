@@ -11,5 +11,5 @@ export default async function NewPhasePage({
   const { id } = await params
   const project = await getProject(id)
   if (!project) notFound()
-  return <PhaseEditor project={project} phase={null} goals={[]} tasks={[]} />
+  return <PhaseEditor project={project} phase={null} tasks={[]} />
 }

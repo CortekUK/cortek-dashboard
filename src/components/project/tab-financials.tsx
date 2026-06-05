@@ -1,26 +1,12 @@
 "use client"
 
 import * as React from "react"
-import {
-  CalendarClock,
-  CheckCircle2,
-  CircleDashed,
-  Coins,
-  DollarSign,
-  Pencil,
-  Percent,
-  Save,
-  UserRound,
-  Wallet,
-  X,
-} from "lucide-react"
+import { Check, Pencil, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { NumberTicker } from "@/components/ui/number-ticker"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusPill } from "@/components/ui/status-pill"
-import { TONE_CLASSES, type StatusTone } from "@/lib/status-colors"
 import {
   getProjectFinancials,
   upsertProjectFinancials,
@@ -47,206 +33,260 @@ export function TabFinancials({ projectId }: { projectId: string }) {
   if (loading || !data) return <Skeleton className="h-72 w-full" />
 
   const total = data.totalCost ?? 0
-  const advance = resolveAmountFromPair(total, data.advanceAmount, data.advancePercent)
-  const commission = resolveAmountFromPair(
+  const advance = resolveAmount(total, data.advanceAmount, data.advancePercent)
+  const commission = resolveAmount(
     total,
     data.devCommissionAmount,
     data.devCommissionPercent
   )
-  const bonus =
-    data.devBonusPercent !== null && total > 0
-      ? (total * data.devBonusPercent) / 100
-      : 0
-  const devPayout = (commission ?? 0) + bonus
+  const devAdvance = resolveAmount(
+    commission ?? 0,
+    data.devAdvanceAmount,
+    data.devAdvancePercent
+  )
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
-      <header className="flex items-center gap-2 rounded-md border bg-card px-4 py-3">
-        <Wallet className="size-5 text-primary" />
-        <div className="flex-1">
-          <h2 className="text-sm font-semibold tracking-tight">Financials</h2>
-          <p className="text-xs text-muted-foreground">
-            Project total, advance status, and dev commission. Click any value
-            to edit.
-          </p>
-        </div>
-      </header>
-
-      <SummaryGrid
-        total={total}
-        advance={advance ?? 0}
-        advanceReceived={data.advanceReceived}
-        devPayout={devPayout}
+    <div className="flex flex-col gap-8">
+      {/* Top: total cost */}
+      <TotalCostHero
+        value={data.totalCost}
+        onSave={(n) => save({ totalCost: n })}
       />
 
-      <Band title="Project total">
-        <FieldRow
-          label="Total cost"
-          icon={<DollarSign className="size-4" />}
-          display={data.totalCost !== null ? fmtMoney(data.totalCost) : null}
-          placeholder="Set total project cost"
-          editor={(close) => (
-            <SingleMoneyEditor
-              initial={data.totalCost}
-              onCancel={close}
-              onSave={async (n) => {
-                await save({ totalCost: n })
-                close()
-              }}
-            />
-          )}
-        />
-      </Band>
+      {/* Two-column split */}
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* PROJECT (money in) */}
+        <Panel title="Project" subtitle="What the client owes us">
+          <Row
+            label="Advance"
+            value={
+              <AmountPercentDisplay
+                amount={advance}
+                base={total}
+                rawAmount={data.advanceAmount}
+                rawPercent={data.advancePercent}
+              />
+            }
+            placeholder="Set advance"
+            editor={(close) => (
+              <AmountPercentEditor
+                base={total}
+                baseLabel="of total"
+                initialAmount={data.advanceAmount}
+                initialPercent={data.advancePercent}
+                onCancel={close}
+                onSave={async ({ amount, percent }) => {
+                  await save({
+                    advanceAmount: amount,
+                    advancePercent: percent,
+                  })
+                  close()
+                }}
+              />
+            )}
+          />
+          <Row
+            label="Advance cleared"
+            value={
+              <ClearedPill
+                cleared={data.advanceReceived}
+                date={data.advanceReceivedOn}
+              />
+            }
+            editor={(close) => (
+              <ClearedEditor
+                initialCleared={data.advanceReceived}
+                initialExpected={data.advanceExpectedOn}
+                initialCleared0n={data.advanceReceivedOn}
+                onCancel={close}
+                onSave={async ({ cleared, expectedOn, clearedOn }) => {
+                  await save({
+                    advanceReceived: cleared,
+                    advanceExpectedOn: expectedOn,
+                    advanceReceivedOn: clearedOn,
+                  })
+                  close()
+                }}
+              />
+            )}
+          />
+          <Row
+            label="Full cost cleared"
+            value={
+              <ClearedPill
+                cleared={data.finalPaymentReceived}
+                date={data.finalPaymentReceivedOn}
+              />
+            }
+            editor={(close) => (
+              <ClearedEditor
+                initialCleared={data.finalPaymentReceived}
+                initialExpected={data.finalPaymentExpectedOn}
+                initialCleared0n={data.finalPaymentReceivedOn}
+                onCancel={close}
+                onSave={async ({ cleared, expectedOn, clearedOn }) => {
+                  await save({
+                    finalPaymentReceived: cleared,
+                    finalPaymentExpectedOn: expectedOn,
+                    finalPaymentReceivedOn: clearedOn,
+                  })
+                  close()
+                }}
+              />
+            )}
+          />
+        </Panel>
 
-      <Band title="Advance">
-        <FieldRow
-          label="Amount"
-          icon={<Coins className="size-4" />}
-          display={
-            advance !== null
-              ? renderAmountWithPercent(advance, total, data.advancePercent, data.advanceAmount)
-              : null
-          }
-          placeholder="Set advance"
-          editor={(close) => (
-            <AmountPercentEditor
-              total={total}
-              initialAmount={data.advanceAmount}
-              initialPercent={data.advancePercent}
-              onCancel={close}
-              onSave={async ({ amount, percent }) => {
-                await save({ advanceAmount: amount, advancePercent: percent })
-                close()
-              }}
-            />
-          )}
-        />
-        <FieldRow
-          label="Status"
-          icon={
-            data.advanceReceived ? (
-              <CheckCircle2 className="size-4 text-success" />
-            ) : (
-              <CircleDashed className="size-4 text-muted-foreground" />
-            )
-          }
-          display={
-            <StatusPill tone={data.advanceReceived ? "success" : "warning"} dot size="sm">
-              {data.advanceReceived ? "Received" : "Not yet"}
-            </StatusPill>
-          }
-          editor={(close) => (
-            <ToggleEditor
-              initial={data.advanceReceived}
-              labelTrue="Received"
-              labelFalse="Not yet"
-              onCancel={close}
-              onSave={async (v) => {
-                await save({ advanceReceived: v })
-                close()
-              }}
-            />
-          )}
-        />
-        <FieldRow
-          label={data.advanceReceived ? "Received on" : "Expected on"}
-          icon={<CalendarClock className="size-4" />}
-          display={
-            data.advanceReceived
-              ? data.advanceReceivedOn
-                ? fmtDate(data.advanceReceivedOn)
-                : null
-              : data.advanceExpectedOn
-                ? fmtDate(data.advanceExpectedOn)
-                : null
-          }
-          placeholder={data.advanceReceived ? "Pick date received" : "Pick expected date"}
-          editor={(close) => (
-            <DateEditor
-              initial={data.advanceReceived ? data.advanceReceivedOn : data.advanceExpectedOn}
-              onCancel={close}
-              onSave={async (d) => {
-                await save(
-                  data.advanceReceived
-                    ? { advanceReceivedOn: d }
-                    : { advanceExpectedOn: d }
-                )
-                close()
-              }}
-            />
-          )}
-        />
-      </Band>
+        {/* DEV (money out) */}
+        <Panel title="Dev" subtitle="What we owe the dev">
+          <Row
+            label="Developer"
+            value={data.devName}
+            placeholder="Who's the dev?"
+            editor={(close) => (
+              <TextEditor
+                initial={data.devName ?? ""}
+                placeholder="Dev name"
+                onCancel={close}
+                onSave={async (v) => {
+                  await save({ devName: v.trim() || null })
+                  close()
+                }}
+              />
+            )}
+          />
+          <Row
+            label="Commission"
+            value={
+              <AmountPercentDisplay
+                amount={commission}
+                base={total}
+                rawAmount={data.devCommissionAmount}
+                rawPercent={data.devCommissionPercent}
+              />
+            }
+            placeholder="Set commission"
+            editor={(close) => (
+              <AmountPercentEditor
+                base={total}
+                baseLabel="of total"
+                initialAmount={data.devCommissionAmount}
+                initialPercent={data.devCommissionPercent}
+                onCancel={close}
+                onSave={async ({ amount, percent }) => {
+                  await save({
+                    devCommissionAmount: amount,
+                    devCommissionPercent: percent,
+                  })
+                  close()
+                }}
+              />
+            )}
+          />
+          <Row
+            label="Advance to dev"
+            value={
+              <AmountPercentDisplay
+                amount={devAdvance}
+                base={commission ?? 0}
+                rawAmount={data.devAdvanceAmount}
+                rawPercent={data.devAdvancePercent}
+              />
+            }
+            placeholder="Set dev advance"
+            editor={(close) => (
+              <AmountPercentEditor
+                base={commission ?? 0}
+                baseLabel="of commission"
+                initialAmount={data.devAdvanceAmount}
+                initialPercent={data.devAdvancePercent}
+                onCancel={close}
+                onSave={async ({ amount, percent }) => {
+                  await save({
+                    devAdvanceAmount: amount,
+                    devAdvancePercent: percent,
+                  })
+                  close()
+                }}
+              />
+            )}
+          />
+          <Row
+            label="Advance given"
+            value={
+              <GivenPill
+                given={data.devAdvanceGiven}
+                date={data.devAdvanceGivenOn}
+              />
+            }
+            editor={(close) => (
+              <GivenEditor
+                initialGiven={data.devAdvanceGiven}
+                initialGivenOn={data.devAdvanceGivenOn}
+                onCancel={close}
+                onSave={async ({ given, givenOn }) => {
+                  await save({
+                    devAdvanceGiven: given,
+                    devAdvanceGivenOn: givenOn,
+                  })
+                  close()
+                }}
+              />
+            )}
+          />
+        </Panel>
+      </div>
+    </div>
+  )
+}
 
-      <Band title="Dev commission">
-        <FieldRow
-          label="Developer"
-          icon={<UserRound className="size-4" />}
-          display={data.devName}
-          placeholder="Who's the dev on this?"
-          editor={(close) => (
-            <TextEditor
-              initial={data.devName ?? ""}
-              placeholder="Dev name"
-              onCancel={close}
-              onSave={async (v) => {
-                await save({ devName: v.trim() || null })
-                close()
-              }}
-            />
-          )}
-        />
-        <FieldRow
-          label="Base commission"
-          icon={<Coins className="size-4" />}
-          display={
-            commission !== null
-              ? renderAmountWithPercent(
-                  commission,
-                  total,
-                  data.devCommissionPercent,
-                  data.devCommissionAmount
-                )
-              : null
-          }
-          placeholder="Set base commission"
-          editor={(close) => (
-            <AmountPercentEditor
-              total={total}
-              initialAmount={data.devCommissionAmount}
-              initialPercent={data.devCommissionPercent}
-              onCancel={close}
-              onSave={async ({ amount, percent }) => {
-                await save({
-                  devCommissionAmount: amount,
-                  devCommissionPercent: percent,
-                })
-                close()
-              }}
-            />
-          )}
-        />
-        <FieldRow
-          label="Bonus"
-          icon={<Percent className="size-4" />}
-          display={
-            data.devBonusPercent !== null
-              ? renderBonus(data.devBonusPercent, total)
-              : null
-          }
-          placeholder="Set bonus %"
-          editor={(close) => (
-            <PercentEditor
-              initial={data.devBonusPercent}
-              onCancel={close}
-              onSave={async (n) => {
-                await save({ devBonusPercent: n })
-                close()
-              }}
-            />
-          )}
-        />
-      </Band>
+// ──────────────────────────────────────────────────────────────────────────
+// Top: total cost hero
+// ──────────────────────────────────────────────────────────────────────────
+
+function TotalCostHero({
+  value,
+  onSave,
+}: {
+  value: number | null
+  onSave: (n: number | null) => Promise<void>
+}) {
+  const [editing, setEditing] = React.useState(false)
+
+  return (
+    <div className="rounded-xl border bg-card px-6 py-5">
+      <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+        Project total
+      </div>
+      {editing ? (
+        <div className="mt-2 max-w-xs">
+          <MoneyEditor
+            initial={value}
+            onCancel={() => setEditing(false)}
+            onSave={async (n) => {
+              await onSave(n)
+              setEditing(false)
+            }}
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="group mt-1 flex items-baseline gap-3 text-left"
+        >
+          <span
+            className={
+              value === null
+                ? "text-2xl italic text-muted-foreground"
+                : "text-4xl font-semibold tabular-nums tracking-tight"
+            }
+          >
+            {value === null ? "Set total" : fmtMoney(value)}
+          </span>
+          <Pencil className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+        </button>
+      )}
     </div>
   )
 }
@@ -255,41 +295,46 @@ export function TabFinancials({ projectId }: { projectId: string }) {
 // Layout primitives
 // ──────────────────────────────────────────────────────────────────────────
 
-function Band({
+function Panel({
   title,
+  subtitle,
   children,
 }: {
   title: string
+  subtitle?: string
   children: React.ReactNode
 }) {
   return (
-    <section className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
+    <section className="flex flex-col gap-3">
+      <div className="flex items-baseline justify-between border-b pb-2">
+        <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+        {subtitle && (
+          <span className="text-xs text-muted-foreground">{subtitle}</span>
+        )}
+      </div>
       <div className="divide-y rounded-md border bg-card">{children}</div>
     </section>
   )
 }
 
-function FieldRow({
+function Row({
   label,
-  icon,
-  display,
+  value,
   placeholder,
   editor,
 }: {
   label: string
-  icon?: React.ReactNode
-  display: React.ReactNode | null
+  value: React.ReactNode | null
   placeholder?: string
   editor: (close: () => void) => React.ReactNode
 }) {
   const [editing, setEditing] = React.useState(false)
   const close = React.useCallback(() => setEditing(false), [])
+  const isEmpty = value === null || value === undefined || value === ""
 
   return (
     <div className="group flex flex-col gap-2 px-4 py-3">
       <div className="flex items-center gap-3">
-        {icon && <span className="text-muted-foreground">{icon}</span>}
         <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           {label}
         </span>
@@ -297,13 +342,13 @@ function FieldRow({
         {!editing && (
           <>
             <span
-              className={`text-sm ${
-                display === null || display === ""
-                  ? "italic text-muted-foreground"
-                  : "font-medium"
-              }`}
+              className={
+                isEmpty
+                  ? "text-sm italic text-muted-foreground"
+                  : "text-sm font-medium"
+              }
             >
-              {display ?? placeholder ?? "—"}
+              {isEmpty ? placeholder ?? "—" : value}
             </span>
             <Button
               variant="ghost"
@@ -317,74 +362,70 @@ function FieldRow({
           </>
         )}
       </div>
-      {editing && <div className="pl-7">{editor(close)}</div>}
+      {editing && <div>{editor(close)}</div>}
     </div>
   )
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// Summary grid
+// Display helpers
 // ──────────────────────────────────────────────────────────────────────────
 
-function SummaryGrid({
-  total,
-  advance,
-  advanceReceived,
-  devPayout,
-}: {
-  total: number
-  advance: number
-  advanceReceived: boolean
-  devPayout: number
-}) {
-  const net = total - devPayout
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <StatBox label="Total cost" amount={total} tone="primary" />
-      <StatBox
-        label="Advance"
-        amount={advance}
-        tone={advanceReceived ? "success" : "warning"}
-        hint={advanceReceived ? "Received" : "Not yet"}
-      />
-      <StatBox label="Dev payout" amount={devPayout} tone="info" />
-      <StatBox
-        label="Agency net"
-        amount={net}
-        tone={net >= 0 ? "success" : "destructive"}
-      />
-    </div>
-  )
-}
-
-function StatBox({
-  label,
+function AmountPercentDisplay({
   amount,
-  tone,
-  hint,
+  base,
+  rawAmount,
+  rawPercent,
 }: {
-  label: string
-  amount: number
-  tone: StatusTone
-  hint?: string
+  amount: number | null
+  base: number
+  rawAmount: number | null
+  rawPercent: number | null
 }) {
-  const palette = TONE_CLASSES[tone]
+  if (amount === null) return null
+  const pct =
+    rawPercent !== null
+      ? rawPercent
+      : base > 0 && rawAmount !== null
+        ? (rawAmount / base) * 100
+        : null
   return (
-    <div className="relative flex flex-col gap-1 overflow-hidden rounded-xl border bg-card p-4">
-      <span
-        aria-hidden
-        className={`absolute -right-6 -top-6 size-20 rounded-full opacity-15 blur-2xl ${palette.dot}`}
-      />
-      <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-        {label}
-      </span>
-      <span className="text-2xl font-semibold tracking-tight tabular-nums">
-        <NumberTicker value={amount} format={fmtMoney} />
-      </span>
-      {hint && (
-        <span className="text-[11px] text-muted-foreground">{hint}</span>
+    <span>
+      {fmtMoney(amount)}
+      {pct !== null && base > 0 && (
+        <span className="ml-2 text-xs font-normal text-muted-foreground">
+          ({fmtPercent(pct)})
+        </span>
       )}
-    </div>
+    </span>
+  )
+}
+
+function ClearedPill({
+  cleared,
+  date,
+}: {
+  cleared: boolean
+  date: string | null
+}) {
+  return (
+    <StatusPill tone={cleared ? "success" : "warning"} dot size="sm">
+      {cleared ? (date ? `Cleared ${fmtDate(date)}` : "Cleared") : "Not yet"}
+    </StatusPill>
+  )
+}
+
+function GivenPill({
+  given,
+  date,
+}: {
+  given: boolean
+  date: string | null
+}) {
+  return (
+    <StatusPill tone={given ? "success" : "warning"} dot size="sm">
+      {given ? (date ? `Given ${fmtDate(date)}` : "Given") : "Not yet"}
+    </StatusPill>
   )
 }
 
@@ -408,14 +449,14 @@ function EditorButtons({
         Cancel
       </Button>
       <Button size="sm" onClick={onSave} disabled={saveDisabled}>
-        <Save />
+        <Check />
         Save
       </Button>
     </div>
   )
 }
 
-function SingleMoneyEditor({
+function MoneyEditor({
   initial,
   onCancel,
   onSave,
@@ -451,17 +492,22 @@ function SingleMoneyEditor({
 }
 
 function AmountPercentEditor({
-  total,
+  base,
+  baseLabel,
   initialAmount,
   initialPercent,
   onCancel,
   onSave,
 }: {
-  total: number
+  base: number
+  baseLabel: string
   initialAmount: number | null
   initialPercent: number | null
   onCancel: () => void
-  onSave: (v: { amount: number | null; percent: number | null }) => Promise<void>
+  onSave: (v: {
+    amount: number | null
+    percent: number | null
+  }) => Promise<void>
 }) {
   const initialMode: "amount" | "percent" =
     initialPercent !== null && initialAmount === null ? "percent" : "amount"
@@ -476,11 +522,11 @@ function AmountPercentEditor({
     value.trim() === ""
       ? null
       : mode === "percent"
-        ? total > 0
-          ? (total * parseFloat(value)) / 100
+        ? base > 0
+          ? (base * parseFloat(value)) / 100
           : null
-        : total > 0
-          ? (parseFloat(value) / total) * 100
+        : base > 0
+          ? (parseFloat(value) / base) * 100
           : null
 
   return (
@@ -506,7 +552,7 @@ function AmountPercentEditor({
           }`}
           onClick={() => setMode("percent")}
         >
-          % of total
+          % {baseLabel}
         </button>
       </div>
       <div className="flex items-center gap-2">
@@ -526,8 +572,8 @@ function AmountPercentEditor({
       {preview !== null && Number.isFinite(preview) && (
         <p className="text-xs text-muted-foreground">
           {mode === "percent"
-            ? `≈ ${fmtMoney(preview)} of ${fmtMoney(total)}`
-            : `≈ ${fmtPercent(preview)} of ${fmtMoney(total)}`}
+            ? `≈ ${fmtMoney(preview)} ${baseLabel} (${fmtMoney(base)})`
+            : `≈ ${fmtPercent(preview)} ${baseLabel}`}
         </p>
       )}
       <EditorButtons
@@ -550,62 +596,148 @@ function AmountPercentEditor({
   )
 }
 
-function PercentEditor({
-  initial,
+function ClearedEditor({
+  initialCleared,
+  initialExpected,
+  initialCleared0n,
   onCancel,
   onSave,
 }: {
-  initial: number | null
+  initialCleared: boolean
+  initialExpected: string | null
+  initialCleared0n: string | null
   onCancel: () => void
-  onSave: (n: number | null) => Promise<void>
+  onSave: (v: {
+    cleared: boolean
+    expectedOn: string | null
+    clearedOn: string | null
+  }) => Promise<void>
 }) {
-  const [value, setValue] = React.useState(initial?.toString() ?? "")
+  const [cleared, setCleared] = React.useState(initialCleared)
+  const [expectedOn, setExpectedOn] = React.useState(initialExpected ?? "")
+  const [clearedOn, setClearedOn] = React.useState(initialCleared0n ?? "")
+
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <span className="text-muted-foreground">%</span>
-        <Input
-          autoFocus
-          type="number"
-          step="0.1"
-          inputMode="decimal"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="0"
-        />
+    <div className="flex flex-col gap-3">
+      <div className="inline-flex w-fit overflow-hidden rounded-md border text-xs">
+        <button
+          type="button"
+          className={`px-2 py-1 ${
+            cleared
+              ? "bg-success text-success-foreground"
+              : "bg-card text-muted-foreground hover:bg-muted"
+          }`}
+          onClick={() => setCleared(true)}
+        >
+          Cleared
+        </button>
+        <button
+          type="button"
+          className={`px-2 py-1 ${
+            !cleared
+              ? "bg-primary text-primary-foreground"
+              : "bg-card text-muted-foreground hover:bg-muted"
+          }`}
+          onClick={() => setCleared(false)}
+        >
+          Not yet
+        </button>
       </div>
+
+      {cleared ? (
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          Cleared on
+          <Input
+            type="date"
+            value={clearedOn}
+            onChange={(e) => setClearedOn(e.target.value)}
+          />
+        </label>
+      ) : (
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          Expected on
+          <Input
+            type="date"
+            value={expectedOn}
+            onChange={(e) => setExpectedOn(e.target.value)}
+          />
+        </label>
+      )}
+
       <EditorButtons
         onCancel={onCancel}
-        onSave={() => {
-          const n = value.trim() === "" ? null : parseFloat(value)
-          onSave(n === null || Number.isFinite(n) ? n : null)
-        }}
+        onSave={() =>
+          onSave({
+            cleared,
+            expectedOn: cleared ? null : expectedOn || null,
+            clearedOn: cleared ? clearedOn || null : null,
+          })
+        }
       />
     </div>
   )
 }
 
-function DateEditor({
-  initial,
+function GivenEditor({
+  initialGiven,
+  initialGivenOn,
   onCancel,
   onSave,
 }: {
-  initial: string | null
+  initialGiven: boolean
+  initialGivenOn: string | null
   onCancel: () => void
-  onSave: (d: string | null) => Promise<void>
+  onSave: (v: { given: boolean; givenOn: string | null }) => Promise<void>
 }) {
-  const [value, setValue] = React.useState(initial ?? "")
+  const [given, setGiven] = React.useState(initialGiven)
+  const [givenOn, setGivenOn] = React.useState(initialGivenOn ?? "")
+
   return (
-    <div className="flex flex-col gap-2">
-      <Input
-        autoFocus
-        type="date"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-      />
+    <div className="flex flex-col gap-3">
+      <div className="inline-flex w-fit overflow-hidden rounded-md border text-xs">
+        <button
+          type="button"
+          className={`px-2 py-1 ${
+            given
+              ? "bg-success text-success-foreground"
+              : "bg-card text-muted-foreground hover:bg-muted"
+          }`}
+          onClick={() => setGiven(true)}
+        >
+          Given
+        </button>
+        <button
+          type="button"
+          className={`px-2 py-1 ${
+            !given
+              ? "bg-primary text-primary-foreground"
+              : "bg-card text-muted-foreground hover:bg-muted"
+          }`}
+          onClick={() => setGiven(false)}
+        >
+          Not yet
+        </button>
+      </div>
+
+      {given && (
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          Given on
+          <Input
+            type="date"
+            value={givenOn}
+            onChange={(e) => setGivenOn(e.target.value)}
+          />
+        </label>
+      )}
+
       <EditorButtons
         onCancel={onCancel}
-        onSave={() => onSave(value || null)}
+        onSave={() =>
+          onSave({
+            given,
+            givenOn: given ? givenOn || null : null,
+          })
+        }
       />
     </div>
   )
@@ -636,102 +768,19 @@ function TextEditor({
   )
 }
 
-function ToggleEditor({
-  initial,
-  labelTrue,
-  labelFalse,
-  onCancel,
-  onSave,
-}: {
-  initial: boolean
-  labelTrue: string
-  labelFalse: string
-  onCancel: () => void
-  onSave: (v: boolean) => Promise<void>
-}) {
-  const [value, setValue] = React.useState(initial)
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="inline-flex w-fit overflow-hidden rounded-md border text-xs">
-        <button
-          type="button"
-          className={`px-2 py-1 ${
-            value
-              ? "bg-success text-success-foreground"
-              : "bg-card text-muted-foreground hover:bg-muted"
-          }`}
-          onClick={() => setValue(true)}
-        >
-          {labelTrue}
-        </button>
-        <button
-          type="button"
-          className={`px-2 py-1 ${
-            !value
-              ? "bg-primary text-primary-foreground"
-              : "bg-card text-muted-foreground hover:bg-muted"
-          }`}
-          onClick={() => setValue(false)}
-        >
-          {labelFalse}
-        </button>
-      </div>
-      <EditorButtons onCancel={onCancel} onSave={() => onSave(value)} />
-    </div>
-  )
-}
-
 // ──────────────────────────────────────────────────────────────────────────
-// Formatting + derivations
+// Math + formatting
 // ──────────────────────────────────────────────────────────────────────────
 
-function resolveAmountFromPair(
-  total: number,
+function resolveAmount(
+  base: number,
   amount: number | null,
   percent: number | null
 ): number | null {
   if (amount !== null) return amount
-  if (percent !== null && total > 0) return (total * percent) / 100
+  if (percent !== null && base > 0) return (base * percent) / 100
   if (percent !== null) return 0
   return null
-}
-
-function renderAmountWithPercent(
-  amount: number,
-  total: number,
-  percent: number | null,
-  rawAmount: number | null
-) {
-  const pct =
-    percent !== null
-      ? percent
-      : total > 0 && rawAmount !== null
-        ? (rawAmount / total) * 100
-        : null
-  return (
-    <span className="font-medium">
-      {fmtMoney(amount)}
-      {pct !== null && total > 0 && (
-        <span className="ml-2 text-xs font-normal text-muted-foreground">
-          ({fmtPercent(pct)} of total)
-        </span>
-      )}
-    </span>
-  )
-}
-
-function renderBonus(percent: number, total: number) {
-  const amount = total > 0 ? (total * percent) / 100 : 0
-  return (
-    <span className="font-medium">
-      {fmtPercent(percent)}
-      {total > 0 && (
-        <span className="ml-2 text-xs font-normal text-muted-foreground">
-          (= {fmtMoney(amount)})
-        </span>
-      )}
-    </span>
-  )
 }
 
 function fmtMoney(n: number): string {

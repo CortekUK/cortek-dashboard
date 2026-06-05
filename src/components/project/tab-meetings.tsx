@@ -5,6 +5,7 @@ import {
   Calendar,
   CalendarPlus,
   Check,
+  ChevronDown,
   Clock,
   ExternalLink,
   Link as LinkIcon,
@@ -28,6 +29,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -154,11 +164,11 @@ export function TabMeetings({ projectId }: { projectId: string }) {
       {meetings.length === 0 ? (
         <EmptyState onSchedule={() => setDialogOpen(true)} />
       ) : (
-        <div className="grid min-h-0 gap-4 xl:grid-cols-[340px_1fr]">
-          <MeetingList
+        <div className="flex min-h-0 flex-col gap-4">
+          <MeetingPicker
             upcoming={upcoming}
             past={past}
-            selectedId={selectedId}
+            selected={selected}
             onSelect={setSelectedId}
           />
           {selected ? (
@@ -170,7 +180,7 @@ export function TabMeetings({ projectId }: { projectId: string }) {
             />
           ) : (
             <div className="flex items-center justify-center rounded-xl border border-dashed bg-card/30 p-10 text-sm text-muted-foreground">
-              Select a meeting on the left to see details.
+              Pick a meeting from the dropdown above.
             </div>
           )}
         </div>
@@ -244,42 +254,103 @@ function EmptyState({ onSchedule }: { onSchedule: () => void }) {
   )
 }
 
-// ─── Left column: meeting list ─────────────────────────────────────────────
+// ─── Meeting picker (dropdown) ─────────────────────────────────────────────
 
-function MeetingList({
+function MeetingPicker({
   upcoming,
   past,
-  selectedId,
+  selected,
   onSelect,
 }: {
   upcoming: Meeting[]
   past: Meeting[]
-  selectedId: string | null
+  selected: Meeting | null
   onSelect: (id: string) => void
 }) {
+  const now = new Date()
+  const selectedDate = selected ? parseDate(selected.scheduledAt) : null
+
   return (
-    <div className="flex flex-col gap-5 rounded-xl border bg-card p-3 xl:max-h-[calc(100vh-220px)] xl:overflow-y-auto">
-      <ListSection
-        label="Upcoming"
-        meetings={upcoming}
-        selectedId={selectedId}
-        onSelect={onSelect}
-        emptyHint="Nothing scheduled."
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            className="group flex w-full items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/30"
+          >
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+                <Video className="size-4" />
+              </span>
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <span className="truncate text-sm font-semibold">
+                  {selected?.title || "Pick a meeting"}
+                </span>
+                <span className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
+                  {selectedDate ? (
+                    <>
+                      <span className="inline-flex items-center gap-1">
+                        <Calendar className="size-3" />
+                        {formatDateShort(selectedDate)}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="size-3" />
+                        {formatTime(selectedDate)}
+                      </span>
+                      <span
+                        className={cn(
+                          "rounded-full px-1.5 py-px text-[10px]",
+                          isUpcomingDate(selectedDate, now)
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-muted-foreground"
+                        )}
+                      >
+                        {formatRelative(selectedDate, now)}
+                      </span>
+                    </>
+                  ) : selected ? (
+                    <span className="italic">unscheduled</span>
+                  ) : (
+                    <span>
+                      {upcoming.length} upcoming · {past.length} past
+                    </span>
+                  )}
+                </span>
+              </div>
+            </div>
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+          </button>
+        }
       />
-      {past.length > 0 && (
-        <ListSection
-          label="Past"
-          meetings={past}
-          selectedId={selectedId}
+      <DropdownMenuContent
+        align="start"
+        className="max-h-[60vh] min-w-[320px] overflow-y-auto"
+      >
+        <PickerGroup
+          label="Upcoming"
+          meetings={upcoming}
+          selectedId={selected?.id ?? null}
           onSelect={onSelect}
-          muted
+          emptyHint="Nothing scheduled."
         />
-      )}
-    </div>
+        {past.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <PickerGroup
+              label="Past"
+              meetings={past}
+              selectedId={selected?.id ?? null}
+              onSelect={onSelect}
+              muted
+            />
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
-function ListSection({
+function PickerGroup({
   label,
   meetings,
   selectedId,
@@ -294,108 +365,81 @@ function ListSection({
   emptyHint?: string
   muted?: boolean
 }) {
-  return (
-    <section className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between px-2">
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          {label}
-        </h3>
-        <span className="text-[11px] text-muted-foreground">
-          {meetings.length}
-        </span>
-      </div>
-      {meetings.length === 0 ? (
-        emptyHint && (
-          <p className="px-2 text-xs italic text-muted-foreground">
-            {emptyHint}
-          </p>
-        )
-      ) : (
-        <ul className="flex flex-col gap-1">
-          {meetings.map((m) => (
-            <li key={m.id}>
-              <MeetingListItem
-                meeting={m}
-                selected={selectedId === m.id}
-                onSelect={() => onSelect(m.id)}
-                muted={muted}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  )
-}
-
-function MeetingListItem({
-  meeting,
-  selected,
-  onSelect,
-  muted,
-}: {
-  meeting: Meeting
-  selected: boolean
-  onSelect: () => void
-  muted?: boolean
-}) {
-  const date = parseDate(meeting.scheduledAt)
   const now = new Date()
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        "group flex w-full flex-col gap-1 rounded-lg border border-transparent px-3 py-2 text-left transition-colors",
-        selected
-          ? "border-primary/40 bg-primary/10 shadow-sm shadow-primary/5"
-          : "hover:border-border hover:bg-muted/40",
-        muted && !selected && "opacity-75"
-      )}
-    >
-      <div className="flex items-baseline justify-between gap-2">
-        <span
-          className={cn(
-            "truncate text-sm font-medium",
-            selected ? "text-foreground" : "text-foreground/90"
-          )}
-        >
-          {meeting.title || "Untitled meeting"}
-        </span>
-      </div>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-        {date ? (
-          <>
-            <span className="inline-flex items-center gap-1">
-              <Calendar className="size-3" />
-              {formatDateShort(date)}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Clock className="size-3" />
-              {formatTime(date)}
-            </span>
-            <span
+    <DropdownMenuGroup>
+      <DropdownMenuLabel className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        <span>{label}</span>
+        <span>{meetings.length}</span>
+      </DropdownMenuLabel>
+      {meetings.length === 0 && emptyHint ? (
+        <p className="px-2 pb-2 text-xs italic text-muted-foreground">
+          {emptyHint}
+        </p>
+      ) : (
+        meetings.map((m) => {
+          const date = parseDate(m.scheduledAt)
+          const selected = selectedId === m.id
+          return (
+            <DropdownMenuItem
+              key={m.id}
+              onClick={() => onSelect(m.id)}
               className={cn(
-                "rounded-full px-1.5 py-px text-[10px]",
-                isUpcomingDate(date, now)
-                  ? "bg-primary/10 text-primary"
-                  : "bg-muted text-muted-foreground"
+                "flex flex-col items-start gap-1",
+                selected && "bg-primary/10",
+                muted && !selected && "opacity-75"
               )}
             >
-              {formatRelative(date, now)}
-            </span>
-          </>
-        ) : (
-          <span className="italic">unscheduled</span>
-        )}
-        {meeting.fathomUrl && (
-          <span className="inline-flex items-center gap-1 text-info">
-            <Video className="size-3" />
-            Fathom
-          </span>
-        )}
-      </div>
-    </button>
+              <div className="flex w-full items-center gap-2">
+                <span
+                  className={cn(
+                    "flex-1 truncate text-sm font-medium",
+                    selected && "text-primary"
+                  )}
+                >
+                  {m.title || "Untitled meeting"}
+                </span>
+                {selected && (
+                  <Check className="size-3.5 shrink-0 text-primary" />
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                {date ? (
+                  <>
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar className="size-3" />
+                      {formatDateShort(date)}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="size-3" />
+                      {formatTime(date)}
+                    </span>
+                    <span
+                      className={cn(
+                        "rounded-full px-1.5 py-px text-[10px]",
+                        isUpcomingDate(date, now)
+                          ? "bg-primary/10 text-primary"
+                          : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {formatRelative(date, now)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="italic">unscheduled</span>
+                )}
+                {m.fathomUrl && (
+                  <span className="inline-flex items-center gap-1 text-info">
+                    <Video className="size-3" />
+                    Fathom
+                  </span>
+                )}
+              </div>
+            </DropdownMenuItem>
+          )
+        })
+      )}
+    </DropdownMenuGroup>
   )
 }
 

@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-geist-sans);
+  --font-display: var(--font-geist-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -55,90 +56,137 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0.008 326);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0.008 326);
-  --primary: oklch(0.491 0.27 292.581);
-  --primary-foreground: oklch(0.969 0.016 293.756);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.96 0.003 325.6);
-  --muted-foreground: oklch(0.542 0.034 322.5);
-  --accent: oklch(0.96 0.003 325.6);
-  --accent-foreground: oklch(0.212 0.019 322.12);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0.005 27);
-  --border: oklch(0.922 0.005 325.62);
-  --input: oklch(0.922 0.005 325.62);
-  --ring: oklch(0.711 0.019 323.02);
-  --chart-1: oklch(0.811 0.111 293.571);
-  --chart-2: oklch(0.606 0.25 292.717);
-  --chart-3: oklch(0.541 0.281 293.009);
-  --chart-4: oklch(0.491 0.27 292.581);
-  --chart-5: oklch(0.432 0.232 292.759);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0.008 326);
-  --sidebar-primary: oklch(0.541 0.281 293.009);
-  --sidebar-primary-foreground: oklch(0.969 0.016 293.756);
-  --sidebar-accent: oklch(0.96 0.003 325.6);
-  --sidebar-accent-foreground: oklch(0.212 0.019 322.12);
-  --sidebar-border: oklch(0.922 0.005 325.62);
-  --sidebar-ring: oklch(0.711 0.019 323.02);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0.008 326);
+/* ──────────────────────────────────────────────────────────────────
+   Cortek OS — design tokens
 
-  /* Semantic status tokens — designed to pair with Vega Violet. */
-  --success: oklch(0.58 0.155 162);
+   Aesthetic: warm-neutral operator console with surgical violet
+   accents. Purple is the brand pulse — saturated at the moment of
+   action, never used as wallpaper. Visible borders carry structural
+   "techy" feel; depth comes from crisp edges + subtle elevation, not
+   heavy shadows or saturated washes.
+   ────────────────────────────────────────────────────────────────── */
+
+/* ──────────────────────────────────────────────────────────────────
+   Vercel-style palette — true grayscale chrome, hairline borders,
+   zero hue in neutrals. Purple lives only as the brand accent on
+   actions (primary buttons, focus ring, brand pulses) — never as
+   sidebar fill, hover tint, or canvas wash.
+
+   Light  : #FFFFFF canvas, #FAFAFA panels, #EAEAEA borders, #000 fg
+   Dark   : #000000 canvas, #0A0A0A cards,  #262626 borders, #FAFAFA fg
+   ────────────────────────────────────────────────────────────────── */
+
+:root {
+  --background: oklch(1 0 0);                    /* #FFFFFF */
+  --foreground: oklch(0.145 0 0);                /* near-black */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+
+  /* Brand accent — violet. Used on primary buttons, focus rings,
+     active brand chips. Not used as chrome fill. */
+  --primary: oklch(0.515 0.265 292);
+  --primary-foreground: oklch(0.985 0.012 290);
+
+  --secondary: oklch(0.97 0 0);                  /* #F5F5F5 */
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);                      /* #F5F5F5 */
+  --muted-foreground: oklch(0.556 0 0);          /* #8E8E8E */
+  --accent: oklch(0.955 0 0);                    /* #F2F2F2 — hover */
+  --accent-foreground: oklch(0.145 0 0);
+
+  --destructive: oklch(0.585 0.235 27);
+  --destructive-foreground: oklch(0.985 0.005 27);
+
+  /* Hairlines — the structural element of Vercel's UI. */
+  --border: oklch(0.918 0 0);                    /* #EAEAEA */
+  --input: oklch(0.918 0 0);
+  --ring: oklch(0.6 0.2 292);                    /* violet focus */
+
+  --chart-1: oklch(0.6 0.2 292);
+  --chart-2: oklch(0.55 0.17 235);
+  --chart-3: oklch(0.62 0.17 162);
+  --chart-4: oklch(0.62 0.18 60);
+  --chart-5: oklch(0.6 0.22 27);
+
+  --radius: 0.5rem;
+
+  /* Sidebar — same neutral grayscale as the canvas, distinguished
+     only by a hairline border. No tint, no fill. */
+  --sidebar: oklch(0.985 0 0);                   /* #FAFAFA */
+  --sidebar-foreground: oklch(0.205 0 0);
+  --sidebar-primary: oklch(0.145 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.955 0 0);            /* hover = neutral, not violet */
+  --sidebar-accent-foreground: oklch(0.145 0 0);
+  --sidebar-border: oklch(0.918 0 0);
+  --sidebar-ring: oklch(0.6 0.2 292);
+
+  --success: oklch(0.6 0.14 162);
   --success-foreground: oklch(0.985 0.005 162);
-  --warning: oklch(0.58 0.17 55);
+  --warning: oklch(0.62 0.16 55);
   --warning-foreground: oklch(0.985 0.005 55);
-  --info: oklch(0.55 0.17 235);
+  --info: oklch(0.58 0.16 235);
   --info-foreground: oklch(0.985 0.005 235);
 }
 
 .dark {
-  --background: oklch(0.145 0.008 326);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.212 0.019 322.12);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.212 0.019 322.12);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.432 0.232 292.759);
-  --primary-foreground: oklch(0.969 0.016 293.756);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.263 0.024 320.12);
-  --muted-foreground: oklch(0.711 0.019 323.02);
-  --accent: oklch(0.263 0.024 320.12);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0.005 22);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.542 0.034 322.5);
-  --chart-1: oklch(0.811 0.111 293.571);
-  --chart-2: oklch(0.606 0.25 292.717);
-  --chart-3: oklch(0.541 0.281 293.009);
-  --chart-4: oklch(0.491 0.27 292.581);
-  --chart-5: oklch(0.432 0.232 292.759);
-  --sidebar: oklch(0.212 0.019 322.12);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.606 0.25 292.717);
-  --sidebar-primary-foreground: oklch(0.969 0.016 293.756);
-  --sidebar-accent: oklch(0.263 0.024 320.12);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.542 0.034 322.5);
+  /* Soft violet-charcoal canvas — neutrals carry a quiet purple
+     undertone (hue 290, low chroma) so the whole UI breathes brand
+     instead of just the buttons. Hover / active states amp the
+     chroma so interaction reads as a clear purple moment. */
+  --background: oklch(0.18 0.018 290);           /* near-black, faint violet wash */
+  --foreground: oklch(0.965 0.006 290);
+  --card: oklch(0.215 0.022 290);                /* lifted panel, violet kept */
+  --card-foreground: oklch(0.965 0.006 290);
+  --popover: oklch(0.23 0.025 290);
+  --popover-foreground: oklch(0.965 0.006 290);
 
-  /* Slightly brighter status colors so they pop on dark backgrounds. */
-  --success: oklch(0.72 0.17 162);
+  --primary: oklch(0.72 0.225 292);              /* bumped saturation */
+  --primary-foreground: oklch(0.16 0.05 290);
+
+  --secondary: oklch(0.25 0.025 290);
+  --secondary-foreground: oklch(0.965 0.006 290);
+  --muted: oklch(0.24 0.024 290);
+  --muted-foreground: oklch(0.7 0.022 290);
+
+  /* Hover = stronger violet bias (still subtle enough to coexist
+     with neutral cards). */
+  --accent: oklch(0.285 0.05 290);
+  --accent-foreground: oklch(0.97 0.01 290);
+
+  --destructive: oklch(0.7 0.2 22);
+  --destructive-foreground: oklch(0.985 0.005 22);
+
+  /* Hairlines pick up a sliver of violet so edges feel part of the
+     palette rather than a contrasting outline. */
+  --border: oklch(0.31 0.028 290);
+  --input: oklch(0.31 0.028 290);
+  --ring: oklch(0.68 0.22 292);
+
+  --chart-1: oklch(0.78 0.2 292);
+  --chart-2: oklch(0.7 0.17 235);
+  --chart-3: oklch(0.72 0.17 162);
+  --chart-4: oklch(0.74 0.17 60);
+  --chart-5: oklch(0.7 0.2 22);
+
+  /* Sidebar matches canvas; active item reads as a clear violet
+     wash — the brand moment in navigation. */
+  --sidebar: oklch(0.18 0.018 290);
+  --sidebar-foreground: oklch(0.965 0.006 290);
+  --sidebar-primary: oklch(0.72 0.225 292);
+  --sidebar-primary-foreground: oklch(0.16 0.05 290);
+  --sidebar-accent: oklch(0.295 0.075 292);      /* active / hover = violet wash */
+  --sidebar-accent-foreground: oklch(0.97 0.025 292);
+  --sidebar-border: oklch(0.31 0.028 290);
+  --sidebar-ring: oklch(0.68 0.22 292);
+
+  --success: oklch(0.74 0.16 162);
   --success-foreground: oklch(0.14 0.04 162);
-  --warning: oklch(0.74 0.17 60);
+  --warning: oklch(0.76 0.17 60);
   --warning-foreground: oklch(0.14 0.04 60);
-  --info: oklch(0.70 0.17 235);
+  --info: oklch(0.72 0.17 235);
   --info-foreground: oklch(0.14 0.04 235);
 }
 
@@ -146,16 +194,76 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
+
+  /* Vercel-style typographic defaults — Geist with stylistic sets on,
+     contextual + discretionary ligatures, no synthesized weights. */
   html {
     @apply font-sans;
+    font-synthesis: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings:
+      "ss01" on, "ss03" on, "ss04" on,
+      "cv11" on,
+      "calt" on, "liga" on;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-weight: 400;
+    letter-spacing: -0.011em;
+  }
+
+  /* Headings: weight + tight tracking is the Vercel signature.
+     Larger sizes = tighter tracking. */
+  h1, .h1 {
+    @apply font-display font-semibold;
+    letter-spacing: -0.034em;
+    line-height: 1.05;
+  }
+  h2, .h2 {
+    @apply font-display font-semibold;
+    letter-spacing: -0.028em;
+    line-height: 1.1;
+  }
+  h3, .h3 {
+    @apply font-display font-semibold;
+    letter-spacing: -0.022em;
+    line-height: 1.2;
+  }
+  h4, h5, h6 {
+    @apply font-display font-semibold;
+    letter-spacing: -0.014em;
+  }
+
+  /* Numerals: tabular + slashed-zero for technical surfaces (counts,
+     durations, financials). Apply with `.num` on any number element. */
+  .num {
+    font-variant-numeric: tabular-nums slashed-zero;
+    font-feature-settings: "tnum" on, "zero" on, "ss01" on;
+  }
+
+  /* Monospace label voice — the BACKLOG / SOURCE chrome-caps style. */
+  .label-mono {
+    @apply font-mono uppercase text-muted-foreground;
+    font-size: 10.5px;
+    letter-spacing: 0.085em;
+    font-weight: 500;
+  }
+
+  /* Inline technical code voice — commit hashes, IDs, durations. */
+  .code-inline {
+    @apply font-mono text-[0.92em] rounded-[4px] px-1 py-px;
+    background: color-mix(in oklch, var(--muted), transparent 35%);
+    color: var(--foreground);
+    letter-spacing: -0.01em;
   }
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   Magic UI / Aceternity-style motion utilities (CSS-only).
+   Ambient utilities — quiet schematic textures for hero / empty
+   states. Tied to theme tokens so they re-skin automatically.
    ────────────────────────────────────────────────────────────────── */
 
 @keyframes slide-up-fade {
@@ -163,19 +271,57 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.cortek-grid-bg {
-  background-image:
-    linear-gradient(to right, color-mix(in oklch, var(--border), transparent 40%) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklch, var(--border), transparent 40%) 1px, transparent 1px);
-  background-size: 28px 28px;
+@keyframes pulse-ring {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.04); }
 }
 
+/* Engineering blueprint grid. Lower-contrast in light, brighter in
+   dark — both lean on the border token so it always matches surface. */
+.cortek-grid-bg {
+  background-image:
+    linear-gradient(to right, color-mix(in oklch, var(--border), transparent 55%) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, var(--border), transparent 55%) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: -1px -1px;
+}
+
+/* Dual-source aurora — a soft violet/cyan wash for hero surfaces.
+   Quiet on purpose; the primary is doing the heavy lifting elsewhere. */
 .cortek-noise {
   background-image:
-    radial-gradient(circle at 20% 10%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 55%),
-    radial-gradient(circle at 90% 80%, color-mix(in oklch, var(--info) 12%, transparent), transparent 55%);
+    radial-gradient(ellipse 80% 60% at 15% 0%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 60%),
+    radial-gradient(ellipse 70% 55% at 100% 100%, color-mix(in oklch, var(--info) 13%, transparent), transparent 60%);
+}
+
+/* Hairline divider with a faded mid — used between zones inside a
+   card without committing to a hard border. */
+.cortek-rule {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklch, var(--border), transparent 20%) 20%,
+    color-mix(in oklch, var(--border), transparent 20%) 80%,
+    transparent
+  );
 }
 
 .cortek-fade-in {
   animation: slide-up-fade 0.35s cubic-bezier(0.2, 0.65, 0.3, 1) both;
+}
+
+/* Soft glow ring keyed off --primary. Use on the active brand moment
+   (a launching CTA, the active project chip). Not for general hover. */
+.cortek-pulse {
+  position: relative;
+}
+.cortek-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary), transparent 75%);
+  animation: pulse-ring 2.6s ease-in-out infinite;
 }

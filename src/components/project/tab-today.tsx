@@ -37,6 +37,7 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -494,28 +495,30 @@ function FilterBar({
         count={phaseActive ? phaseSelected : undefined}
         total={totalPhases}
       >
-        <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-          Phase
-        </DropdownMenuLabel>
-        {phases.map((p) => (
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Phase
+          </DropdownMenuLabel>
+          {phases.map((p) => (
+            <DropdownMenuCheckboxItem
+              key={p.id}
+              checked={phaseFilter?.has(p.id) ?? true}
+              onCheckedChange={() => togglePhase(p.id)}
+              closeOnClick={false}
+            >
+              <span className={`size-2 rounded-full ${TONE_CLASSES.primary.dot}`} />
+              {p.name}
+            </DropdownMenuCheckboxItem>
+          ))}
           <DropdownMenuCheckboxItem
-            key={p.id}
-            checked={phaseFilter?.has(p.id) ?? true}
-            onCheckedChange={() => togglePhase(p.id)}
+            checked={phaseFilter?.has(NO_PHASE_KEY) ?? true}
+            onCheckedChange={() => togglePhase(NO_PHASE_KEY)}
             closeOnClick={false}
           >
-            <span className={`size-2 rounded-full ${TONE_CLASSES.primary.dot}`} />
-            {p.name}
+            <span className={`size-2 rounded-full ${TONE_CLASSES.neutral.dot}`} />
+            No phase
           </DropdownMenuCheckboxItem>
-        ))}
-        <DropdownMenuCheckboxItem
-          checked={phaseFilter?.has(NO_PHASE_KEY) ?? true}
-          onCheckedChange={() => togglePhase(NO_PHASE_KEY)}
-          closeOnClick={false}
-        >
-          <span className={`size-2 rounded-full ${TONE_CLASSES.neutral.dot}`} />
-          No phase
-        </DropdownMenuCheckboxItem>
+        </DropdownMenuGroup>
       </FacetButton>
 
       <FacetButton
@@ -524,22 +527,24 @@ function FilterBar({
         count={statusActive ? statusFilter.size : undefined}
         total={STATUS_FILTERS.length}
       >
-        <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-          Status
-        </DropdownMenuLabel>
-        {STATUS_FILTERS.map((s) => (
-          <DropdownMenuCheckboxItem
-            key={s}
-            checked={statusFilter.has(s)}
-            onCheckedChange={() => toggleStatus(s)}
-            closeOnClick={false}
-          >
-            <span
-              className={`size-2 rounded-full ${TONE_CLASSES[TASK_STATUS_TONE[s]].dot}`}
-            />
-            {TASK_STATUS_LABEL[s]}
-          </DropdownMenuCheckboxItem>
-        ))}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Status
+          </DropdownMenuLabel>
+          {STATUS_FILTERS.map((s) => (
+            <DropdownMenuCheckboxItem
+              key={s}
+              checked={statusFilter.has(s)}
+              onCheckedChange={() => toggleStatus(s)}
+              closeOnClick={false}
+            >
+              <span
+                className={`size-2 rounded-full ${TONE_CLASSES[TASK_STATUS_TONE[s]].dot}`}
+              />
+              {TASK_STATUS_LABEL[s]}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuGroup>
       </FacetButton>
 
       <FacetButton
@@ -548,22 +553,24 @@ function FilterBar({
         count={priorityActive ? priorityFilter.size : undefined}
         total={PRIORITY_FILTERS.length}
       >
-        <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-          Priority
-        </DropdownMenuLabel>
-        {PRIORITY_FILTERS.map((p) => (
-          <DropdownMenuCheckboxItem
-            key={p}
-            checked={priorityFilter.has(p)}
-            onCheckedChange={() => togglePriority(p)}
-            closeOnClick={false}
-          >
-            <span
-              className={`size-2 rounded-full ${TONE_CLASSES[TASK_PRIORITY_TONE[p]].dot}`}
-            />
-            {TASK_PRIORITY_LABEL[p]}
-          </DropdownMenuCheckboxItem>
-        ))}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Priority
+          </DropdownMenuLabel>
+          {PRIORITY_FILTERS.map((p) => (
+            <DropdownMenuCheckboxItem
+              key={p}
+              checked={priorityFilter.has(p)}
+              onCheckedChange={() => togglePriority(p)}
+              closeOnClick={false}
+            >
+              <span
+                className={`size-2 rounded-full ${TONE_CLASSES[TASK_PRIORITY_TONE[p]].dot}`}
+              />
+              {TASK_PRIORITY_LABEL[p]}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuGroup>
       </FacetButton>
 
       <AnimatePresence>
